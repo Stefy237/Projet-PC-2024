@@ -1,4 +1,6 @@
-package v2;
+package v3;
+
+import java.util.concurrent.Semaphore;
 
 import utils.IProdConsBuffer;
 import utils.Message;
@@ -14,35 +16,47 @@ public class ProdConsBuffer implements IProdConsBuffer{
     protected int in = 0;
     protected int out = 0;
     
+    Semaphore notFull;
+    Semaphore notEmpty;
+    Semaphore mutex;
+
     public ProdConsBuffer(int bufSz) {
         this.bufSz = bufSz;
         messages = new Message[bufSz];
+
+        notFull = new Semaphore(bufSz);
+        notEmpty = new Semaphore(0);
+        mutex = new Semaphore(1);
     }
 
     @Override
-    public synchronized void put(Message m) throws InterruptedException {
-        while (nfull == bufSz) {
-            wait();
-        }
+    public void put(Message m) throws InterruptedException {
+        notFull.acquire();
+        mutex.acquire();
+
+        messages[in] = m;
+        in = (in + 1)%bufSz;
+
         m.setNumber(tot);
         nfull++;
         tot++;
-        messages[in] = m;
-        in = (in + 1)%bufSz;
-        notifyAll();
+
+        mutex.release();
+        notEmpty.release();
     }
 
     @Override
-    public synchronized Message get() throws InterruptedException {
-        while (nfull == 0) {
-            wait();
-        }
-        nfull--;
+    public Message get() throws InterruptedException {
+        notEmpty.acquire();
+        mutex.acquire();
+
         Message m = messages[out];
-        messages[out] = null;
         out = (out + 1)%bufSz;
-        notifyAll(); 
-        
+
+        nfull--;
+        mutex.release();
+        notFull.release();
+
         return m;
     }
 
@@ -69,4 +83,5 @@ public class ProdConsBuffer implements IProdConsBuffer{
     public synchronized void setNumberOfTerminatedProdThread() {
         nProd++;
     }
+    
 }

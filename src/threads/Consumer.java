@@ -16,7 +16,7 @@ public class Consumer extends Thread{
             try {
                 Message m = buffer.get();
                 m.proceed();
-                System.out.println("message consume by " + getName());
+                System.out.println("message " + m.getNumber() + " consume by " + getName());
             } catch (InterruptedException e) {
                 System.out.println("consumer " + getName() + " was interrupted"); 
                 break;
