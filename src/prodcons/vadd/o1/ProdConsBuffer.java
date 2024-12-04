@@ -2,11 +2,12 @@ package prodcons.vadd.o1;
 
 import utils.IProdConsBuffer;
 import utils.Message;
+import utils.Task;
 
 public class ProdConsBuffer implements IProdConsBuffer {
 
     protected int bufSz;
-    protected Message[] messages;
+    protected Task[] tasks;
 
     protected int nfull = 0;
     protected int tot = 0;
@@ -17,7 +18,7 @@ public class ProdConsBuffer implements IProdConsBuffer {
     
     public ProdConsBuffer(int bufSz) {
         this.bufSz = bufSz;
-        messages = new Message[bufSz];
+        tasks = new Task[bufSz];
     }
 
     @Override
@@ -28,7 +29,7 @@ public class ProdConsBuffer implements IProdConsBuffer {
         t.setNumber(tot);
         nfull++;
         tot++;
-        messages[in] = t;
+        tasks[in] = (Task) t;
         in = (in + 1)%bufSz;
         notifyAll();
     }
@@ -39,12 +40,12 @@ public class ProdConsBuffer implements IProdConsBuffer {
             wait();
         }
         nfull--;
-        Message m = messages[out];
-        messages[out] = null;
+        Message t = tasks[out];
+        tasks[out] = null;
         out = (out + 1)%bufSz;
         notifyAll(); 
         
-        return m;
+        return t;
     }
 
     @Override

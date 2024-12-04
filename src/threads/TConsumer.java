@@ -24,5 +24,17 @@ public class TConsumer extends Thread {
             }
         }
     } 
+
+    public boolean isUnuse() {
+        boolean use = false;
+
+        while(getState() == Thread.State.WAITING && !isInterrupted()) {
+            long lastActivityTime = System.currentTimeMillis();
+
+            use = (System.currentTimeMillis() - lastActivityTime) < 3000; 
+        }
+
+        return use;
+    }
     
 }

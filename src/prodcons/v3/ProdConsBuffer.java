@@ -24,8 +24,8 @@ public class ProdConsBuffer implements IProdConsBuffer{
         this.bufSz = bufSz;
         messages = new Message[bufSz];
 
-        notFull = new Semaphore(bufSz);
-        notEmpty = new Semaphore(0);
+        notFull = new Semaphore(bufSz, true);
+        notEmpty = new Semaphore(0, true);
         mutex = new Semaphore(1);
     }
 
