@@ -12,7 +12,6 @@ public class ProdConsBuffer implements IProdConsBuffer {
     protected int tot = 0;
     protected int nProd = 0;
     boolean firstCome = true;
-    Message[] msgs;
 
     protected int in = 0;
     protected int out = 0;
@@ -50,64 +49,28 @@ public class ProdConsBuffer implements IProdConsBuffer {
     }
 
     @Override
-    public synchronized Message[] get(int k) throws InterruptedException { 
-        if(firstCome) {
-            msgs = new Message[k];
-            for (int i=0; i<msgs.length; i++) {
-                msgs[i] = null;
-            }
-            firstCome = false;
-        }
-
-        if(k <= bufSz) {
-            while (nfull < k) {
+    public synchronized Message[] get(int k) throws InterruptedException {
+        Message[] msgs = new Message[k];
+        int expected = 0;
+    
+        while (expected < k) {
+            int toConsume = Math.min(k - expected, bufSz); 
+            while (nfull < toConsume) { 
                 wait();
             }
-            nfull = nfull -  k;
-            
-            int pos=0;
-            int i =0;
-            while (msgs[i] != null) {
-                i++;
-            }
-            pos = i;
-            
-            int j = 0;
-            while(j < k) {
-                msgs[pos + j] = messages[out];
+    
+            for (int i = 0; i < toConsume; i++) {
+                msgs[expected++] = messages[out];
                 messages[out] = null;
-                out = (out + 1)%bufSz; 
-                j++;
+                out = (out + 1) % bufSz;
+                nfull--;
             }
-
-            firstCome = true; 
-            notifyAll();  
-        } else {
-            while(nfull < bufSz) {
-                wait();
-            }
-            nfull = 0;
-
-            int pos=0;
-            int i =0;
-            while (msgs[i] != null) {
-                i++;
-            }
-            pos = i;
-
-            int j = 0;
-            while(j < bufSz) {
-                msgs[pos + j] = messages[out];
-                messages[out] = null;
-                out = (out + 1)%bufSz; 
-                j++;
-            }
-            get(k-bufSz);
-            
+            notifyAll(); 
         }
-
+    
         return msgs;
     }
+    
 
     @Override
     public int nmsg() {

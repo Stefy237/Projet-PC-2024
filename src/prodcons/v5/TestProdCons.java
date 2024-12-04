@@ -5,9 +5,9 @@ import threads.*;
 public class TestProdCons {
 
     public static void main(String[] args) {
-        int nProd = 3;
-        int nCons = 2;
-        int bufSiz = 1;
+        int nProd = 6;
+        int nCons = 4;
+        int bufSiz = 5;
 
         ProdConsBuffer buffer = new ProdConsBuffer(bufSiz);
         Producer[] prodThreads = new Producer[nProd];
@@ -39,16 +39,15 @@ public class TestProdCons {
         }
          
         while (buffer.getNumberOfTerminatedProdThread() != nProd) {} 
-        /*while(buffer.nmsg() != 0) {
-            //try {
-                System.out.println("Waiting for 5s to trying to empty the buffer");
-                break;
-                //Thread.currentThread.sleep(5000);
-            //} catch (InterruptedException e) {
-                //e.printStackTrace();
-            //}
-        }*/
-
+        while (buffer.nmsg() != 0) {
+            System.out.println("Waiting for 5s to empty the buffer");
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        
         for(MConsumer c : consThreads) {
             try {
                 c.interrupt();
