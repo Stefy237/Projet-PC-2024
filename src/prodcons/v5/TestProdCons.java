@@ -39,13 +39,10 @@ public class TestProdCons {
         }
          
         while (buffer.getNumberOfTerminatedProdThread() != nProd) {} 
-        while (buffer.nmsg() != 0) {
-            System.out.println("Waiting for 5s to empty the buffer");
-            try {
-                Thread.sleep(5000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
         
         for(MConsumer c : consThreads) {

@@ -1,5 +1,8 @@
 package prodcons.vadd.o2;
 
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
 import threads.TConsumer;
 import utils.IProdConsBuffer;
 import utils.Message;
@@ -18,9 +21,17 @@ public class TaskExecutor implements IProdConsBuffer {
 
     protected int in = 0;
     protected int out = 0;
+    protected final Lock lock = new ReentrantLock();
+    protected Thread executorThread;
     
     public TaskExecutor (int bufSz) {
         this.bufSz = bufSz;
+        tasks = new Task[bufSz];
+    }
+
+    public TaskExecutor (int bufSz, int maxCons) {
+        this.bufSz = bufSz;
+        this.maxCons = maxCons;
         tasks = new Task[bufSz];
     }
 
@@ -58,30 +69,44 @@ public class TaskExecutor implements IProdConsBuffer {
     }
 
     public void execute() {
-        while (nfull != 0) {
-            while(nCons < maxCons && nfull > nCons) {
-                TConsumer c = new TConsumer(this);
-                c.start();
+        executorThread = Thread.currentThread();
+        while (!executorThread.interrupted()) {
+            lock.lock();
+            try {
+                while(nCons < maxCons && nfull > 0) {
+                    TConsumer c = new TConsumer(this);
+                    c.start();
+    
+                    nCons++;
+                }
+            } finally{
+                lock.unlock();
+            }
 
-                nCons++;
-
-                boolean unUse = false;
-
-                while(c.getState() == Thread.State.WAITING && !c.isInterrupted()) {
-                    long lastActivityTime = System.currentTimeMillis();
-        
-                    unUse = (System.currentTimeMillis() - lastActivityTime) > 3000; 
-
-                    if(unUse) {
-                        c.interrupt();
+            for(Thread t : Thread.getAllStackTraces().keySet()) {
+                if(t instanceof TConsumer) {
+                    TConsumer consumer = (TConsumer) t;
+                    if(consumer.isUnuse()) {
+                        consumer.interrupt();
                         nCons--;
                         try {
-                            c.join();
+                            consumer.join();
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
                     }
                 }
+            } 
+        }
+    }
+
+    public void close() {
+        if (executorThread != null) {
+            executorThread.interrupt();
+            try {
+                executorThread.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
     }

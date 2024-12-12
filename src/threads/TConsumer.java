@@ -6,6 +6,7 @@ import utils.Task;
 public class TConsumer extends Thread {
 
     IProdConsBuffer buffer;
+    private long lastActivityTime;
     
     public TConsumer(IProdConsBuffer buffer) {
         this.buffer = buffer;
@@ -17,6 +18,7 @@ public class TConsumer extends Thread {
             try {
                 Task t = (Task) buffer.get();
                 t.run();
+                lastActivityTime = System.currentTimeMillis();
                 System.out.println("Task " + t.getNumber() + " execute by " + getName());
             } catch (InterruptedException e) {
                 System.out.println("consumer " + getName() + " was interrupted"); 
@@ -26,15 +28,7 @@ public class TConsumer extends Thread {
     } 
 
     public boolean isUnuse() {
-        boolean use = false;
-
-        while(getState() == Thread.State.WAITING && !isInterrupted()) {
-            long lastActivityTime = System.currentTimeMillis();
-
-            use = (System.currentTimeMillis() - lastActivityTime) < 3000; 
-        }
-
-        return use;
+        return (System.currentTimeMillis() - lastActivityTime) > 3000;
     }
     
 }

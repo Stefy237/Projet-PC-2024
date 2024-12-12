@@ -40,7 +40,12 @@ public class TestProdCons {
         }
          
         while (buffer.getNumberOfTerminatedProdThread() != nProd && buffer.nmsg() != 0) {} 
-
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        
         for(Consumer c : consThreads) {
             try {
                 c.interrupt();

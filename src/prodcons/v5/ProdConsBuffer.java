@@ -51,16 +51,16 @@ public class ProdConsBuffer implements IProdConsBuffer {
     @Override
     public synchronized Message[] get(int k) throws InterruptedException {
         Message[] msgs = new Message[k];
-        int expected = 0;
+        int taken = 0;
     
-        while (expected < k) {
-            int toConsume = Math.min(k - expected, bufSz); 
+        while (taken < k) {
+            int toConsume = Math.min(k - taken, bufSz); 
             while (nfull < toConsume) { 
                 wait();
             }
     
             for (int i = 0; i < toConsume; i++) {
-                msgs[expected++] = messages[out];
+                msgs[taken++] = messages[out];
                 messages[out] = null;
                 out = (out + 1) % bufSz;
                 nfull--;

@@ -6,7 +6,7 @@ public class Test {
 
     public static void main(String[] args) {
         int nProd = 3;
-        int bufSiz = 2;
+        int bufSiz = 5;
     
         TaskExecutor buffer = new TaskExecutor(bufSiz);
         TProducer[] prodThreads = new TProducer[nProd];
@@ -29,6 +29,15 @@ public class Test {
                 e.printStackTrace();
             }
         }
+
+       while (buffer.getNumberOfTerminatedProdThread() != nProd) {} 
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        buffer.close();
 
         System.out.println("All work done");
 
