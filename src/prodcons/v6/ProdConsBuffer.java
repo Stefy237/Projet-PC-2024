@@ -1,7 +1,5 @@
 package prodcons.v6;
 
-import java.util.concurrent.Semaphore;
-
 import utils.IProdConsBuffer;
 import utils.Message;
 
@@ -15,9 +13,9 @@ public class ProdConsBuffer  implements IProdConsBuffer{
     protected int tot = 0;
     protected int nProd = 0;
 
-    protected Semaphore notRemaining = new Semaphore(0, true);
-    protected Semaphore stillRemaining = new Semaphore(0, true);
-    protected int remainingMessage;
+    protected int remainingCopies = 0;
+    protected int activeConsumers = 0;
+    protected boolean messageFullyConsumed = false;
 
     protected int in = 0;
     protected int out = 0;
@@ -45,9 +43,12 @@ public class ProdConsBuffer  implements IProdConsBuffer{
         while(nfull + n > bufSz) {
             wait();
         }
+
         m.setNumber(tot);
         tot+=n;
-        remainingMessage = n;
+        remainingCopies = n;
+        messageFullyConsumed = false;
+        activeConsumers = 0;
 
         for(int i=0; i<n; i++) {
             messages[in] = m;
@@ -57,32 +58,33 @@ public class ProdConsBuffer  implements IProdConsBuffer{
         nfull+=n;
 
         notifyAll();
-        System.out.println("Producer put " + n + " copies of message " + m.getNumber());
-        notRemaining.acquire();
+        
+        while (!messageFullyConsumed) {
+            wait();
+        }
     }
 
     @Override
     public synchronized Message get() throws InterruptedException {
-        while (nfull == 0) {
+        while (nfull == 0 || messageFullyConsumed) {
             wait();
         }
 
         Message m = messages[out];
-        messages[out] = null;
-        out = (out + 1)%bufSz;
+        activeConsumers++;
 
-        if(--remainingMessage !=0) {
-            stillRemaining.acquire();
+        if(activeConsumers == remainingCopies) {
+            messageFullyConsumed = true;
+            messages[out] = null;
+            out = (out + 1)%bufSz;
+            nfull -= remainingCopies;
         } else {
-            for(int i=0; i<stillRemaining.getQueueLength(); i++) {
-                stillRemaining.release();
+            while (!messageFullyConsumed) {
+                wait();
             }
-            notRemaining.release();
         }
         
-        nfull--;
         notifyAll(); 
-        //System.out.println("Consumer got message " + m.getNumber());
 
         return m;
     }

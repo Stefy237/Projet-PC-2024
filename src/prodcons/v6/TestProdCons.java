@@ -5,9 +5,9 @@ import threads.*;
 public class TestProdCons {
     
         public static void main(String[] args) {
-        int nProd = 2;
-        int nCons = 4;
-        int bufSiz = 3;
+        int nProd = 3;
+        int nCons = 6;
+        int bufSiz = 5;
 
         ProdConsBuffer buffer = new ProdConsBuffer(bufSiz);
         MProducer[] prodThreads = new MProducer[nProd];
